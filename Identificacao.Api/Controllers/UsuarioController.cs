@@ -10,8 +10,23 @@ namespace Identificacao.Api.Controllers
 {
     [ApiController]
     [Route("v1/Usuarios")]
+    [Produces("application/json")]
     public class UsuarioController : ControllerBase
     {
+        /// <summary>
+        /// Este endpoint é reponsavel por validar se o usuario é valido
+        /// </summary>
+        /// <param name="accessToken"></param>
+        /// <param name="id"></param>
+        /// <param name="repositorio"></param>
+        /// <returns>{"validacaoUsuario", false}</returns>
+        [Route("{id}")]
+        [HttpGet]
+        public Dictionary<string, bool> ConsultaSeUsuarioEValido([FromServices] IRepositorioUsuario repositorio, [FromHeader] Guid accessToken, int id)
+        {
+            return repositorio.Obter_usuario_pot_id(accessToken, id);
+        }
+
         /// <summary>
         /// Este endpoint é reponsavel por listar os usuarios cadastrado em uma empresa
         /// </summary>

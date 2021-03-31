@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Identificacao.Infra.Repositorios
 {
@@ -21,30 +22,20 @@ namespace Identificacao.Infra.Repositorios
             _repositorio = repositorio;
         }
 
-        public void Criar_usuario(Usuarios usuario)
+        public bool Criar_usuario(Usuarios usuario)
         {
-            _dados.usuarios.Add(usuario);
-            try
-            {
-                _dados.SaveChanges();
-            }
-            catch (Exception e)
-            {
-                new CommandResultGeneric(false, "Erro ao cadastrar dados no nosso banco de dados contate a SoftClver", e);
-            }
+            //Cria novos dados no repositorio com EF
+            _dados.Entry<Usuarios>(usuario).State = EntityState.Added;
+            // Executa o metodo Salvar no repositorio ao qual retorna um valor booleano informando se foi ou não possivel realizar a operação
+            return SalvarDadosRepositorio().Result;
         }
 
-        public void Editar_usuario(Usuarios usuario)
+        public bool Editar_usuario(Usuarios usuario)
         {
+            // Atualiza os dados no repositorio com EF
             _dados.Entry<Usuarios>(usuario).State = EntityState.Modified;
-            try
-            {
-                _dados.SaveChanges();
-            }
-            catch (Exception e)
-            {
-                new CommandResultGeneric(false, "Erro ao cadastrar dados no nosso banco de dados contate a SoftClver", e);
-            }
+            // Executa o metodo Salvar no repositorio ao qual retorna um valor booleano informando se foi ou não possivel realizar a operação
+            return SalvarDadosRepositorio().Result;
         }
 
         public Guid ObterAccessToken(int idEmpresa)
@@ -63,7 +54,7 @@ namespace Identificacao.Infra.Repositorios
         public int ObterEmpresaPorAccessToken(Guid accessToken)
         {
             // Busca empresa por acessToken
-            var empresa = _dados.Empresas.FirstOrDefault(x => x.AccessToken == accessToken);
+            var empresa = _dados.Empresas.AsNoTracking().FirstOrDefault(x => x.AccessToken == accessToken);
 
             //Se não localizar nenhuma empresa retorna 0
             if (empresa == null)
@@ -117,13 +108,46 @@ namespace Identificacao.Infra.Repositorios
 
         public Usuarios Obter_usuario_email(string email)
         {
+            // Localiza um usuario pelo email
             return _dados.usuarios.AsNoTracking().FirstOrDefault(Consultasusuarios.Obter_usuario_email(email));
         }
 
         public Usuarios Obter_usuario_id(int id)
         {
+            // Localiza o usuario pelo id
             return _dados.usuarios.AsNoTracking().FirstOrDefault(Consultasusuarios.Obter_usuario_id(id));
         }
 
+        public Dictionary<string, bool> Obter_usuario_pot_id(Guid accessToken, int id)
+        {
+            // Localiza o usuario
+            var user = Obter_usuario_id(id);
+            // Localiza o id da empresa se é valido
+            var token = ObterEmpresaPorAccessToken(accessToken);
+            // Cria um novo diciionario para validação
+            var validacao = new Dictionary<string, bool>();
+            // Se o usuario for nulo ou id da empresa for 0 retorna a validação falsa, caso contrario retorna verdadeiro
+            if (user == null || token == 0)
+                validacao.Add("validacaoUsuario", false);
+            else
+                validacao.Add("validacaoUsuario", true);
+            // Retorna a validação realizada
+            return validacao;
+        }
+
+        public async Task<bool> SalvarDadosRepositorio()
+        {
+            try
+            {
+                //Salva os dados no repositorio de maneira assicrona e retorna true
+                await _dados.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                // Retorna false caso apresente erro ao salvar algum dado no repositorio
+                return false;
+            }
+        }
     }
 }

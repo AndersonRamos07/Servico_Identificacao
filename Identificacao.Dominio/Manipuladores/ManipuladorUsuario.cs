@@ -5,6 +5,7 @@ using Identificacao.Dominio.Comandos.Usuarios;
 using Identificacao.Dominio.Entidades;
 using Identificacao.Dominio.Manipuladores.Contratos;
 using Identificacao.Dominio.Repositorios;
+using System;
 using System.Collections.Generic;
 
 namespace Identificacao.Dominio.Manipuladores
@@ -93,7 +94,7 @@ namespace Identificacao.Dominio.Manipuladores
             if (!resultado)
                 return new CommandResultGeneric(false, "Usuario ou senha estão incorretos", null);
 
-            // Consulta empresa
+            // Consulta empresa para relizar o acesso ao sistema
             var consulta_empresa = _repositorioUsuario.ObterAccessToken(verificacao.IdEmpresa);
 
             // 5 - Retornar dados na tela
@@ -137,7 +138,8 @@ namespace Identificacao.Dominio.Manipuladores
                                         command.Status);
 
             // 8 - Atualizo os dados no repositorio
-            _repositorioUsuario.Editar_usuario(usuario);
+            if (!_repositorioUsuario.Editar_usuario(usuario))
+                return new CommandResultGeneric(false, "Erro para salvar os dados, favor comunicar a Soft Clever", null);
 
             // 8 - Retornar dados na tela
             var data = new Dictionary<string, string>();
@@ -179,7 +181,9 @@ namespace Identificacao.Dominio.Manipuladores
                 );
 
             // 4 - Salva a entidade no repositorio
-            _repositorioUsuario.Criar_usuario(usuario);
+            if (!_repositorioUsuario.Criar_usuario(usuario))
+                return new CommandResultGeneric(false, "Erro para salvar os dados, favor comunicar a Soft Clever", null);
+
 
             // 5 - Cria um dicionario para retornar alguns dados especificos
             var data = new Dictionary<string, string>();
@@ -208,7 +212,7 @@ namespace Identificacao.Dominio.Manipuladores
             var usuario = _repositorioUsuario.Obter_usuario_id(command.Id);
 
             // 5 - Valida se retornou algum usuario
-            if(usuario == null)
+            if (usuario == null)
                 return RetornoDeUsuarioEhTokenNaoConferem();
 
             // 6 - Valida se o usuario pertence a empresa informada pelo accessToken
@@ -216,17 +220,18 @@ namespace Identificacao.Dominio.Manipuladores
                 return RetornoDeUsuarioEhTokenNaoConferem();
 
             // 7 - Verifica se a senha antiga confere com a senha que consta no repositorio
-            if(!usuario.Verificar_senha_usuario(command.SenhaAntiga))
+            if (!usuario.Verificar_senha_usuario(command.SenhaAntiga))
                 return RetornoDeUsuarioEhTokenNaoConferem();
 
             // 7 - Edita a senha do usuario
-            usuario.Editar_senha_do_usuario(command.SenhaNova);
+            if (!_repositorioUsuario.Editar_usuario(usuario))
+                return new CommandResultGeneric(false, "Erro para salvar os dados, favor comunicar a Soft Clever", null);
 
             // 8 - Salva os novos dados no repositorio de usuarios
             _repositorioUsuario.Editar_usuario(usuario);
 
             // 9 - Retorna sucesso da execução do comando
-            return new CommandResultGeneric(true, "A senha do usuario foi alterada com sucesso",null);
+            return new CommandResultGeneric(true, "A senha do usuario foi alterada com sucesso", null);
 
         }
 
