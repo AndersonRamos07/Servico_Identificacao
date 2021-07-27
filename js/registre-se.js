@@ -8,11 +8,15 @@ const cabecalho =
   method: 'POST',
 };
 
-function start(){
-    document.querySelector('.email').focus();
+$(".celular").mask("(00)00000-0000");
+
+function start()
+{
+  document.querySelector('.email').focus();
 };
 
-function inserirDados() {
+function inserirDados()
+{
   var novousuario = new Object();
     novousuario.nome = document.querySelector('.nome').value;
     novousuario.ultimoNome = document.querySelector('.ultimoNome').value;
@@ -22,34 +26,50 @@ function inserirDados() {
   return enviarDados(novousuario);
 };
   
-function enviarDados(novoUsuario) {
+function enviarDados(novoUsuario)
+{
   cabecalho.body = JSON.stringify(novoUsuario);
   fetch(baseUrl, cabecalho)
   .then(response => response.json())
   .then(data => tratamentos(data))
-  .catch(err => console.log(err.message));
+  .catch(err => alert(err.message));
 };
 
-function tratamentos(json){
-  if(json.sucesso != false){
+function tratamentos(json)
+{
+  if(json.sucesso != false)
+  {
     cache.setItem('sirius-nome', json.dados.nome);
     cache.setItem('sirius-email', json.dados.email);
     cache.setItem('sirius-id', json.dados.id);    
     cache.setItem('sirius-login', true);
-    console.warn("RESPOSTA: ", json);
-    let par = confirm("PARABÉNS " + json.dados.nome + ", seu cadastro foi feito com sucesso! \n\nRealize seu primeiro acesso ao nosso sistema!");
-    if(par){
-      window.open('./login.html');
-    }
-    else{             //UM ALERT CONTENDO UMA PRÉ-BOAS-VINDAS
-      console.warn("Foi com o ID: ", json.dados.id);
-      console.warn("E de Nome: ", json.dados.nome);
-    }
+    Swal.fire({
+      icon: 'success',
+      title: json.mensagem,
+      text: 'Parabéns ' + json.dados.nome + ' seu cadastro foi realizado com sucesso!',
+      showDenyButton: false,
+      confirmButtonText: `Certo, vamos realizar o acesso!`,
+    }).then((result) =>
+    {
+      if(result.isConfirmed)
+      {
+        Swal.fire('Muito bem!', 'vamos agora realizar o primeiro login ...', 'info');
+        location.href='./login.html';
+      }
+    })
   }
-  else{             //AQUI FICARÁ OS ERROS QUE APARECERÃO NO MODAL-DE-ERROS
-    for(var i = 0; i < json.dados.length; i++){
-      let mensagem = json.dados[i];
-      console.info("ERRO(S)", mensagem.message)
+  else
+  {
+    var erro_s = '';
+    for(var i = 0; i < json.dados.length; i++)
+    {
+      erro_s += "<li>" + json.dados[i].property + ' - ' + json.dados[i].message + "</li>";
     }
+    Swal.fire({
+      width: 900,
+      icon: 'warning',
+      title: json.mensagem,
+      html: '<h5>Alguns campos precisam ser preenchidos:</h5> <ul style="list-style-type:none">' + erro_s + '</ul>'
+    })
   }
 };
